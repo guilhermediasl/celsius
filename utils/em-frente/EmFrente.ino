@@ -1,6 +1,6 @@
 //EmFrente.ino
 //Código para robô com dois motores andar para frente
-//Autor: Gabriel Alves de Lima, Kewim Lima
+//Autor: Gabriel Alves de Lima, Kewim Lima da silva
 
 //Constantes para uso durante o programa
 //Define as portas dos motores e velocidades
