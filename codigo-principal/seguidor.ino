@@ -4,10 +4,10 @@
 #define MOTOR_D2 5
 #define BTN 11
 #define VELOCIDADE_MAXIMA 255
-#define VELOCIDADE_BASE 55
+#define VELOCIDADE_BASE 100
 #define NUMERO_DE_SENSORES 6
 #define NUMERO_DE_VERIFICADORES 2
-#define KP 10
+#define KP 20
 #define KD 0
 #define KI 0
 #define BRANCA true
@@ -23,8 +23,8 @@
 #define LIMITE_TEMPO_ESQUERDA 500
 
 int sensores[NUMERO_DE_SENSORES] = {A2, A3, A4, A5, A6, A7};
-int erros[NUMERO_DE_SENSORES] = {-8,-6,-3,3,6,8};
-int verificadores[NUMERO_DE_VERIFICADORES] = {A1, A0};
+int erros[NUMERO_DE_SENSORES] = {-6,-4,-1,1,4,6};
+int verificadores[NUMERO_DE_VERIFICADORES] = {A0, A1};
 int kp = KP;
 int kd = KD;
 int ki = KI;
@@ -44,8 +44,6 @@ unsigned int contadorDeVerificacaoEsquerda = 0;
 unsigned int contadorDeMarcacao[NUMERO_DE_VERIFICADORES] = {0, 0};
 
 void setup() {
-	delay(1000);
-
 	pinMode(MOTOR_E1, OUTPUT);
 	pinMode(MOTOR_E2, OUTPUT);
 	pinMode(MOTOR_D1, OUTPUT);
@@ -59,7 +57,16 @@ void setup() {
 	}
 
 	calibrarSensores(10);
-
+	delay(1000);
+	while(lerSensor(verificadores[0]) == true && lerSensor(verificadores[1]) == true);
+	
+	for(int c=0; c<5 ; c++){
+		digitalWrite(13, HIGH);
+		delay(500);
+		digitalWrite(13, LOW);
+		delay(500);
+	}
+	
 	t0 = millis();
 }
 

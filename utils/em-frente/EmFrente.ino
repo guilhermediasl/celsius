@@ -4,10 +4,10 @@
 
 //Constantes para uso durante o programa
 //Define as portas dos motores e velocidades
-#define MOTOR_D1 6	//O D1 e o E1, quando ligados, devem mandar o robô para frente
-#define MOTOR_D2 9
-#define MOTOR_E1 5
-#define MOTOR_E2 3
+#define MOTOR_D2 3	//O D1 e o E1, quando ligados, devem mandar o robô para frente
+#define MOTOR_D1 5
+#define MOTOR_E2 9
+#define MOTOR_E1 6
 #define VELOCIDADE_BASE 100
 #define VELOCIDADE_MAXIMA 255
 
