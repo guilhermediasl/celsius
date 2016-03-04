@@ -1,10 +1,10 @@
-#define MOTOR_E1 5
-#define MOTOR_E2 6
-#define MOTOR_D1 7
-#define MOTOR_D2 8
+#define MOTOR_E1 6
+#define MOTOR_E2 9
+#define MOTOR_D1 5
+#define MOTOR_D2 3
 #define BTN 11
 #define VELOCIDADE_MAXIMA 255
-#define VELOCIDADE_BASE 50
+#define VELOCIDADE_BASE 100
 #define NUMERO_DE_SENSORES 6
 #define NUMERO_DE_VERIFICADORES 2
 #define KP 10
@@ -44,6 +44,8 @@ unsigned int contadorDeVerificacaoEsquerda = 0;
 unsigned int contadorDeMarcacao[NUMERO_DE_VERIFICADORES] = {0, 0};
 
 void setup() {
+	delay(1000);
+
 	pinMode(MOTOR_E1, OUTPUT);
 	pinMode(MOTOR_E2, OUTPUT);
 	pinMode(MOTOR_D1, OUTPUT);
@@ -56,9 +58,6 @@ void setup() {
 		pinMode(verificadores[i], INPUT);
 	}
 
-	while(digitalRead(BTN));
-	while(!digitalRead(BTN));
-
 	calibrarSensores(10);
 
 	t0 = millis();
@@ -69,11 +68,11 @@ void loop() {
 	erro = lerPontoAtual();
 	correcao = (kp * erro) + (kd * (erro - erroAnterior)) + (ki * somatorioDeErro);
 
-	correcaoBruta();
+	correcaoConvencional();
 
-	if(devePararPorTempo() || devePararPorMarcacao() || devePararPorContador()) {
-		para();
-	} 
+	//if(devePararPorTempo() || devePararPorMarcacao() || devePararPorContador()) {
+	//	para();
+	//} 
 
 	erroAnterior = erro;
 	somatorioDeErro += erro;
