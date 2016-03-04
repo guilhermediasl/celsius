@@ -4,7 +4,7 @@
 #define MOTOR_D2 5
 #define BTN 11
 #define VELOCIDADE_MAXIMA 255
-#define VELOCIDADE_BASE 100
+#define VELOCIDADE_BASE 55
 #define NUMERO_DE_SENSORES 6
 #define NUMERO_DE_VERIFICADORES 2
 #define KP 10
@@ -22,9 +22,9 @@
 #define NUMERO_DE_CRUZAMENTOS 2
 #define LIMITE_TEMPO_ESQUERDA 500
 
-int sensores[NUMERO_DE_SENSORES] = {A0, A1, A2, A3, A4, A5};
-int erros[NUMERO_DE_SENSORES] = {-4,-2,-1,1,2,4};
-int verificadores[NUMERO_DE_VERIFICADORES] = {A6, A7};
+int sensores[NUMERO_DE_SENSORES] = {A2, A3, A4, A5, A6, A7};
+int erros[NUMERO_DE_SENSORES] = {-8,-6,-3,3,6,8};
+int verificadores[NUMERO_DE_VERIFICADORES] = {A1, A0};
 int kp = KP;
 int kd = KD;
 int ki = KI;
@@ -68,7 +68,7 @@ void loop() {
 	erro = lerPontoAtual();
 	correcao = (kp * erro) + (kd * (erro - erroAnterior)) + (ki * somatorioDeErro);
 
-	correcaoConvencional();
+	correcaoBruta();
 
 	//if(devePararPorTempo() || devePararPorMarcacao() || devePararPorContador()) {
 	//	para();
