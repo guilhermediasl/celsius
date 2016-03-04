@@ -1,7 +1,7 @@
-#define MOTOR_E1 6
-#define MOTOR_E2 9
-#define MOTOR_D1 5
-#define MOTOR_D2 3
+#define MOTOR_E1 9
+#define MOTOR_E2 6
+#define MOTOR_D1 3
+#define MOTOR_D2 5
 #define BTN 11
 #define VELOCIDADE_MAXIMA 255
 #define VELOCIDADE_BASE 100
