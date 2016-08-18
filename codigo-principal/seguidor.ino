@@ -10,6 +10,7 @@
 #define KP 20
 #define KD 0
 #define KI 0
+#define DEBUG 1
 #define BRANCA true
 #define PRETA false
 #define TEMPO_PARA_FINAL 40000 //milissegundos
@@ -21,13 +22,11 @@
 #define FINAL_POR_CONTADOR 2
 #define NUMERO_DE_CRUZAMENTOS 2
 #define LIMITE_TEMPO_ESQUERDA 500
+#define N_CARACTERES 30
 
 int sensores[NUMERO_DE_SENSORES] = {A2, A3, A4, A5, A6, A7};
 int erros[NUMERO_DE_SENSORES] = {-6,-4,-1,1,4,6};
 int verificadores[NUMERO_DE_VERIFICADORES] = {A0, A1};
-int kp = KP;
-int kd = KD;
-int ki = KI;
 int erro = 0;
 int correcao = 0;
 int erroAnterior = 0;
@@ -42,8 +41,17 @@ bool flagDeVerificador[NUMERO_DE_VERIFICADORES] = {false, false};
 unsigned int t0 = 0;
 unsigned int contadorDeVerificacaoEsquerda = 0;
 unsigned int contadorDeMarcacao[NUMERO_DE_VERIFICADORES] = {0, 0};
+char buffer[N_CARACTERES+2];
+float kp = KP;
+float kd = KD;
+float ki = KI;
 
 void setup() {
+	if(DEBUG)
+	{
+		 Serial.begin(9600);
+		 Serial.flush();
+	}
 	pinMode(MOTOR_E1, OUTPUT);
 	pinMode(MOTOR_E2, OUTPUT);
 	pinMode(MOTOR_D1, OUTPUT);
@@ -71,7 +79,18 @@ void setup() {
 }
 
 void loop() {
-
+	if(Serial.available() >0)
+ 	{
+   		int indice = 0;
+   		delay(100); 
+   		int numChar = Serial.available();
+   		if(numChar> (N_CARACTERES-1)) 
+   		{numChar = (N_CARACTERES-1);}
+   
+	 	while(numChar--)
+   		{buffer[indice++] = Serial.read();}
+   		dividirString(buffer);
+   	} 
 	erro = lerPontoAtual();
 	correcao = (kp * erro) + (kd * (erro - erroAnterior)) + (ki * somatorioDeErro);
 
@@ -177,10 +196,21 @@ bool devePararPorContador() {
 
 void para() {
 	while(true) {
+		motorEsquerdo(150);
+		motorDireito(150);
+		delay(500);
+		motorEsquerdo(150);
+		motorDireito(150);
+		delay(300);
+		motorEsquerdo(100);
+		motorDireito(100);
+		delay(200);
+		motorEsquerdo(50);
+		motorDireito(50);
+		delay(100);
 		motorEsquerdo(0);
 		motorDireito(0);
-
-		if(tipoDeFinal == FINAL_POR_TEMPO) {
+			if(tipoDeFinal == FINAL_POR_TEMPO) {
 			digitalWrite(13, HIGH);
 			delay(200);
 			digitalWrite(13, LOW);
@@ -327,4 +357,79 @@ void motorDireito(int potencia) {
 		analogWrite(MOTOR_D2, abs(pwr));
 		digitalWrite(MOTOR_D1, LOW);
 	}
+}
+/**************************** Função de strings **************************************/
+void dividirString(char* data)
+{
+    if(DEBUG)
+    {
+    	Serial.print("Entrada de dados: ");
+    	Serial.println(data);
+    }
+    char* parameter;
+    
+    parameter = strtok (data, " ,");
+    while(parameter != NULL)
+    {
+      serial_radical();
+      parameter = strtok(NULL, " ,");
+    }
+    for(int x=0; x<16; x++)
+    {
+    	buffer[x]='\0';
+    }
+    Serial.flush();
+}
+void serial_radical(char* data)
+{
+	if((((data[0] == 'P' && data[1] == 'A') && data[2]=='R') && data[3] == 'A'))
+	{
+		para();
+	}
+	
+	if(data[0] == 'P' && data[1]!= 'A')
+	{
+		kp = strtol(data+1, NULL, 10);
+      		kp = constrain(kp, -500, 500);
+      		if(DEBUG)
+      		{
+      		Serial.print("kp setado para: ");
+      		Serial.println(kp);
+      		}
+	}
+	
+	if(data[0] == 'I')
+	{
+		ki = strtol(data+1, NULL, 10);
+      		ki = constrain(ki, -500, 500);
+      		if(DEBUG)
+      		{
+      		Serial.print("ki setado para: ");
+      		Serial.println(ki);
+      		}
+	}
+	
+	if(data[0] == 'D')
+	{
+		kd = strtol(data+1, NULL, 10);
+      		kd = constrain(kd, -500, 500);
+      		if(DEBUG)
+      		{
+      		Serial.print("kd setado para: ");
+      		Serial.println(kd);
+      		}
+	}
+	
+	if(data[0] == 'V')
+	{
+		velocidadeAtual = strtol(data+1, NULL, 10);
+      		velocidadeAtual = constrain(velocidadeAtual, -500, 500);
+      		if(DEBUG)
+      		{
+      		Serial.print("Velocidade atual está: ");
+      		Serial.println(velocidadeAtual);
+      		}
+	}
+	
+	
 }
