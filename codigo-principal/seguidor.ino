@@ -61,9 +61,9 @@ void setup() {
 		pinMode(sensores[i], INPUT);
 	for(int i = 0; i < NUMERO_DE_VERIFICADORES; i++)
 		pinMode(verificadores[i], INPUT);
-
 	calibrarSensores(10);
 	delay(1000);
+	
 	while(lerSensor(verificadores[0]) == true && lerSensor(verificadores[1]) == true);
 	
 	for(int c=0; c<5 ; c++){
@@ -103,6 +103,37 @@ void loop() {
 	prevenirWindUp();
 }
 
+/*################################# FUNÇÕES DE LEITURA ########################################### */
+//Ler sensor. Recebe a porta que ele deve ler e retorna true se o sensor está fora da linha (na mesa)
+bool lerSensor(int porta) {
+	int leitura = analogRead(porta);
+
+	if ((corDaLinha == PRETA && leitura > limiar) || (corDaLinha == BRANCA && leitura < limiar)) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+//Lê os sensores guias e retorna valores maiores que 0 para direita e menor que zero para esquerda
+int lerPontoAtual() {
+	int numerador = 0;
+	int denominador = 0;
+
+	for (int i = 0; i < NUMERO_DE_SENSORES; i++) {
+		if (lerSensor(sensores[i])) {
+			numerador += erros[i];
+			denominador++;
+		}
+	}
+
+	if (denominador == 0) 
+		denominador = 1;
+
+	return numerador / denominador;
+}
+
 bool verificaMarcacao(int lado) {
 	bool viuMarcacao = lerSensor(verificadores[lado]);
 
@@ -122,27 +153,35 @@ bool verificaMarcacao(int lado) {
 		return false;
 	}
 }
-
+/*################################### FUNÇÕES DE CONTROLE ############################################### */
 void prevenirWindUp() {
-  if (erro == 0) {
-    somatorioDeErro = 0;
-  }
-  else if (somatorioDeErro >= VELOCIDADE_MAXIMA) {
-    somatorioDeErro = somatorioDeErro / 3;
-  }
+  	if (erro == 0)
+    		somatorioDeErro = 0;
+  	else if (somatorioDeErro >= VELOCIDADE_MAXIMA)
+    		somatorioDeErro = somatorioDeErro / 3;
 }
 
-bool devePararPorTempo() {
-	bool teste = (millis() - t0) >= TEMPO_PARA_FINAL;
-	if(teste) {
-		tipoDeFinal = FINAL_POR_TEMPO;
-		return true;
+void correcaoBruta() {
+	if(correcao > 0) {
+		motorEsquerdo(velocidadeAtual + correcao);
+		motorDireito(- correcao);
+	}
+	else if(correcao < 0) {
+		motorEsquerdo(correcao);
+		motorDireito(velocidadeAtual - correcao);
 	}
 	else {
-		return false;
+		motorEsquerdo(velocidadeAtual);
+		motorDireito(velocidadeAtual);
 	}
 }
 
+void correcaoConvencional() {
+	motorEsquerdo(velocidadeAtual + correcao);
+	motorDireito(velocidadeAtual - correcao);
+}
+
+/*#################################### FUNÇÕES DE PARADA ##########################################*/
 bool devePararPorMarcacao() {
 	bool teste = false;
 	
@@ -152,7 +191,6 @@ bool devePararPorMarcacao() {
 		if(viuMarcacao) {
 		    marcacaoVista = true;
 		}
-
 		if(marcacaoVista && !verificaMarcacao(ESQUERDA)) {
 			contadorDeVerificacaoEsquerda++;
 		}
@@ -229,96 +267,7 @@ void para() {
 		}
 	}
 }
-
-void correcaoBruta() {
-	if(correcao > 0) {
-		motorEsquerdo(velocidadeAtual + correcao);
-		motorDireito(- correcao);
-	}
-	else if(correcao < 0) {
-		motorEsquerdo(correcao);
-		motorDireito(velocidadeAtual - correcao);
-	}
-	else {
-		motorEsquerdo(velocidadeAtual);
-		motorDireito(velocidadeAtual);
-	}
-}
-
-void correcaoConvencional() {
-	motorEsquerdo(velocidadeAtual + correcao);
-	motorDireito(velocidadeAtual - correcao);
-}
-
-//*********************** Funções dos sensores ******************************
-
-//Calibra os sensores
-void calibrarSensores(int numeroDeIteracoes) {
-  //Lê a media de luminosidade na mesa e na linha. Esses valores definem a cor da mesa
-  unsigned int mediaDaMesa = 0;
-  unsigned int mediaDaLinha = 0;
-
-  digitalWrite(13, HIGH);
-  delay(1500);
-  digitalWrite(13, LOW);
-
-  for (int i = 0; i < numeroDeIteracoes; i++) {
-  	mediaDaMesa += (analogRead(verificadores[0]) +
-  		analogRead(verificadores[1])) / 2;
-  }
-
-  for (int i = 0; i < numeroDeIteracoes; i++) {
-  	mediaDaLinha += analogRead(sensores[2]);
-  }
-
-  mediaDaMesa /= numeroDeIteracoes;
-  mediaDaLinha /= numeroDeIteracoes;
-
-  //O limiar é a média das médias
-  limiar = (mediaDaMesa + mediaDaLinha) / 2;
-  if (mediaDaMesa > mediaDaLinha) {
-  	corDaLinha = BRANCA;
-  }
-  else {
-  	corDaLinha = PRETA;
-  }
-}
-
-//Ler sensor. Recebe a porta que ele deve ler e retorna true se o sensor está fora da linha (na mesa)
-bool lerSensor(int porta) {
-	int leitura = analogRead(porta);
-
-	if ((corDaLinha == PRETA && leitura > limiar) ||
-		(corDaLinha == BRANCA && leitura < limiar)) {
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
-//Lê os sensores guias e retorna valores maiores que 0 para direita e menor que zero para esquerda
-int lerPontoAtual() {
-	int numerador = 0;
-	int denominador = 0;
-
-	for (int i = 0; i < NUMERO_DE_SENSORES; i++) {
-		if (lerSensor(sensores[i])) {
-			numerador += erros[i];
-			denominador++;
-		}
-	}
-
-	if (denominador == 0) {
-		denominador = 1;
-	}
-
-	return numerador / denominador;
-}
-
-
-//*********************** Funções dos Motores ******************************
-
+//############################### FUNÇÕES DOS MOTORES ##########################################
 
 //Função para permitir apenas potências abaixo da máxima
 int limitadorPotencia(int potencia) {
@@ -356,7 +305,8 @@ void motorDireito(int potencia) {
 		digitalWrite(MOTOR_D1, LOW);
 	}
 }
-/**************************** Função de strings **************************************/
+//############################## FUNÇÕES DE STRING ##################################
+
 void dividirString(char* data)
 {
     if(DEBUG)
