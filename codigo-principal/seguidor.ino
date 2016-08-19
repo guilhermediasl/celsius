@@ -1,42 +1,42 @@
-#define MOTOR_E1 9
-#define MOTOR_E2 6
-#define MOTOR_D1 3
-#define MOTOR_D2 5
-#define BTN 11
-#define VELOCIDADE_MAXIMA 255
-#define VELOCIDADE_BASE 100
-#define NUMERO_DE_SENSORES 6
+#define MOTOR_E1 		9
+#define MOTOR_E2 		6
+#define MOTOR_D1 		3
+#define MOTOR_D2 		5
+#define BTN 			11
+#define VELOCIDADE_MAXIMA 	255
+#define VELOCIDADE_BASE 	100
+#define NUMERO_DE_SENSORES 	6
 #define NUMERO_DE_VERIFICADORES 2
-#define KP 20
-#define KD 0
-#define KI 0
-#define DEBUG 1
-#define BRANCA true
-#define PRETA false
-#define TEMPO_PARA_FINAL 40000 //milissegundos
-#define ESQUERDA 0
-#define DIREITA 1
-#define TESTE_DE_MARCACAO 10
-#define FINAL_POR_TEMPO 0
-#define FINAL_POR_MARCACAO 1
-#define FINAL_POR_CONTADOR 2
-#define NUMERO_DE_CRUZAMENTOS 2
-#define LIMITE_TEMPO_ESQUERDA 500
-#define N_CARACTERES 30
+#define KP 			20
+#define KD 			0
+#define KI 			0
+#define DEBUG 			1
+#define BRANCA 			true
+#define PRETA 			false
+#define TEMPO_PARA_FINAL 	40000 //milissegundos
+#define ESQUERDA 		0
+#define DIREITA 		1
+#define TESTE_DE_MARCACAO 	10
+#define FINAL_POR_TEMPO 	0
+#define FINAL_POR_MARCACAO 	1
+#define FINAL_POR_CONTADOR 	2
+#define NUMERO_DE_CRUZAMENTOS 	2
+#define LIMITE_TEMPO_ESQUERDA 	500
+#define N_CARACTERES 		30
 
-int sensores[NUMERO_DE_SENSORES] = {A2, A3, A4, A5, A6, A7};
-int erros[NUMERO_DE_SENSORES] = {-6,-4,-1,1,4,6};
+int sensores[NUMERO_DE_SENSORES] 	   = {A2, A3, A4, A5, A6, A7};
+int erros[NUMERO_DE_SENSORES] 	 	   = {-6,-4,-1,1,4,6};
 int verificadores[NUMERO_DE_VERIFICADORES] = {A0, A1};
-int erro = 0;
-int correcao = 0;
-int erroAnterior = 0;
-int somatorioDeErro = 0;
-int velocidadeAtual = VELOCIDADE_BASE;
-int limiar = 0;
-int tipoDeFinal = -1;
-int contadorDeFinal = 0;
-bool corDaLinha = BRANCA;
-bool marcacaoVista = false;
+int erro 			= 0;
+int correcao 			= 0;
+int erroAnterior 		= 0;
+int somatorioDeErro 		= 0;
+int velocidadeAtual 		= VELOCIDADE_BASE;
+int limiar 			= 0;
+int tipoDeFinal 		=-1;
+int contadorDeFinal 		= 0;
+bool corDaLinha 		= BRANCA;
+bool marcacaoVista 		= false;
 bool flagDeVerificador[NUMERO_DE_VERIFICADORES] = {false, false};
 unsigned int t0 = 0;
 unsigned int contadorDeVerificacaoEsquerda = 0;
@@ -57,12 +57,10 @@ void setup() {
 	pinMode(MOTOR_D1, OUTPUT);
 	pinMode(MOTOR_D2, OUTPUT);
 
-	for(int i = 0; i < NUMERO_DE_SENSORES; i++) {
+	for(int i = 0; i < NUMERO_DE_SENSORES; i++)
 		pinMode(sensores[i], INPUT);
-	}
-	for(int i = 0; i < NUMERO_DE_VERIFICADORES; i++) {
+	for(int i = 0; i < NUMERO_DE_VERIFICADORES; i++)
 		pinMode(verificadores[i], INPUT);
-	}
 
 	calibrarSensores(10);
 	delay(1000);
@@ -430,6 +428,4 @@ void serial_radical(char* data)
       		Serial.println(velocidadeAtual);
       		}
 	}
-	
-	
 }
