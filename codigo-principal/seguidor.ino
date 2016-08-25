@@ -365,6 +365,7 @@ void serial_radical(char* data) {
 
           if((((data[0] == 'P' && data[1] == 'A') && data[2]=='R') && data[3] == 'A')) {
             para();
+            Serial.println("Parando...");
             }
   
           if(data[0] == 'P' && data[1]!= 'A') {
