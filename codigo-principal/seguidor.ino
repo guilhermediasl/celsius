@@ -1,15 +1,15 @@
-#define MOTOR_E1     9
+#define MOTOR_E1    9
 #define MOTOR_E2    6
 #define MOTOR_D1    3
 #define MOTOR_D2    5
-#define BTN       11
+#define BTN         11
 #define VELOCIDADE_MAXIMA   255
 #define VELOCIDADE_BASE   100
 #define NUMERO_DE_SENSORES  6
 #define NUMERO_DE_VERIFICADORES 2
-#define KP      20
-#define KD      0
-#define KI      0
+#define KP      15
+#define KD      4
+#define KI      4
 #define DEBUG       1
 #define BRANCA      true
 #define PRETA       false
@@ -24,21 +24,22 @@
 #define LIMITE_TEMPO_ESQUERDA   500
 #define N_CARACTERES    30
 
-int sensores[NUMERO_DE_SENSORES]     = {A2, A3, A4, A5, A6, A7};
-int erros[NUMERO_DE_SENSORES]        = {-6,-4,-1,1,4,6};
-int verificadores[NUMERO_DE_VERIFICADORES] = {A0, A1};
-int erro      = 0;
-int correcao      = 0;
-int erroAnterior    = 0;
-int somatorioDeErro     = 0;
-int velocidadeAtual     = VELOCIDADE_BASE;
-int limiar      = 0;
+float sensores[NUMERO_DE_SENSORES]           = {A2, A3, A4, A5, A6, A7};
+float erros[NUMERO_DE_SENSORES]              = {-6,-4,-1,1,4,6};
+float verificadores[NUMERO_DE_VERIFICADORES] = {A0, A1};
+float erro            = 0;
+float correcao        = 0;
+float erroAnterior    = 0;
+float somatorioDeErro = 0;
+int velocidadeAtual = VELOCIDADE_BASE;
+int limiar          = 0;
 int tipoDeFinal     =-1;
-int contadorDeFinal     = 0;
+int contadorDeFinal = 0;
+int parada          = false;
 bool corDaLinha     = BRANCA;
-bool marcacaoVista    = false;
+bool marcacaoVista  = false;
 bool flagDeVerificador[NUMERO_DE_VERIFICADORES] = {false, false};
-unsigned int t0 = 0;
+unsigned int ultimoProcesso = 0;
 unsigned int contadorDeVerificacaoEsquerda = 0;
 unsigned int contadorDeMarcacao[NUMERO_DE_VERIFICADORES] = {0, 0};
 char buffer[N_CARACTERES+2];
@@ -47,8 +48,7 @@ float kd = KD;
 float ki = KI;
 
 void setup() {
-  if(DEBUG)
-  {
+  if(DEBUG){
      Serial.begin(9600);
      Serial.flush();
   }
@@ -63,20 +63,35 @@ void setup() {
     pinMode(verificadores[i], INPUT);
   calibrarSensores(10);
   delay(1000);
-  
+
   while(lerSensor(verificadores[0]) == true && lerSensor(verificadores[1]) == true);
-  
+ 
   for(int c=0; c<5 ; c++){
     digitalWrite(13, HIGH);
     delay(500);
     digitalWrite(13, LOW);
     delay(500);
   }
-  
-  t0 = millis();
 }
 
 void loop() {
+    float deltaTime = (millis() - ultimoProcesso);
+    ultimoProcesso = millis();
+  
+  erro = lerPontoAtual();
+  correcao = (kp * erro) + (kd * (erro - erroAnterior)/deltaTime/1000.00) + (ki * somatorioDeErro*deltaTime/1000.00);
+ 
+  if(erro == erros[0] || erro == erros[NUMERO_DE_SENSORES-1])
+    correcaoBruta();
+  else
+    correcaoConvencional();      
+    erroAnterior = erro;
+    somatorioDeErro += erro;
+  if (erro == 0)
+    somatorioDeErro = 0;
+    prevenirWindUp();
+  if(parada) para();
+
   if(Serial.available() >0)
   {
       int indice = 0;
@@ -89,18 +104,6 @@ void loop() {
       {buffer[indice++] = Serial.read();}
       dividirString(buffer);
     } 
-  erro = lerPontoAtual();
-  correcao = (kp * erro) + (kd * (erro - erroAnterior)) + (ki * somatorioDeErro);
-
-  correcaoBruta();
-
-  //if(devePararPorTempo() || devePararPorMarcacao() || devePararPorContador()) {
-  //  para();
-  //} 
-
-  erroAnterior = erro;
-  somatorioDeErro += erro;
-  prevenirWindUp();
 }
 
 /*################################# FUNÇÕES DE LEITURA ########################################### */
@@ -121,7 +124,7 @@ void calibrarSensores(int numeroDeIteracoes)
   }
 
  
- for (int i = 0; i < numeroDeIteracoes; i++) 
+ for (int i = 0; i < numeroDeIteracoes; i++)
   {
     mediaDaLinha += analogRead(sensores[2]);
   }
@@ -152,7 +155,7 @@ bool lerSensor(int porta) {
 }
 
 //Lê os sensores guias e retorna valores maiores que 0 para direita e menor que zero para esquerda
-int lerPontoAtual() {
+float lerPontoAtual() {
   int numerador = 0;
   int denominador = 0;
 
@@ -190,20 +193,18 @@ bool verificaMarcacao(int lado) {
 }
 /*################################### FUNÇÕES DE CONTROLE ############################################### */
 void prevenirWindUp() {
-    if (erro == 0)
-        somatorioDeErro = 0;
-    else if (somatorioDeErro >= VELOCIDADE_MAXIMA)
+    if (somatorioDeErro >= VELOCIDADE_MAXIMA)
         somatorioDeErro = somatorioDeErro / 3;
 }
 
 void correcaoBruta() {
   if(correcao > 0) {
     motorEsquerdo(velocidadeAtual + correcao);
-    motorDireito(- correcao);
+    motorDireito (velocidadeAtual - correcao);
   }
   else if(correcao < 0) {
-    motorEsquerdo(correcao);
-    motorDireito(velocidadeAtual - correcao);
+    motorEsquerdo(velocidadeAtual - correcao);
+    motorDireito (velocidadeAtual + correcao);
   }
   else {
     motorEsquerdo(velocidadeAtual);
@@ -212,12 +213,18 @@ void correcaoBruta() {
 }
 
 void correcaoConvencional() {
-  motorEsquerdo(velocidadeAtual + correcao);
-  motorDireito(velocidadeAtual - correcao);
+   if(correcao > 0) {
+    motorEsquerdo(velocidadeAtual + correcao);
+    motorDireito (velocidadeAtual);
+  }
+  else if(correcao < 0) {
+    motorEsquerdo(velocidadeAtual - correcao);
+    motorDireito (velocidadeAtual);
+  }
 }
 
 /*#################################### FUNÇÕES DE PARADA ##########################################*/
-bool devePararPorMarcacao() {
+/*bool devePararPorMarcacao() {
   bool teste = false;
   
   if((millis() - t0) > 5000) {
@@ -248,13 +255,13 @@ bool devePararPorMarcacao() {
     return false;
   }
 }
-
+*/
 bool devePararPorContador() {
   if(verificaMarcacao(DIREITA)) {
     contadorDeFinal++;
   }
   
-  bool teste = contadorDeFinal >= (2 + 2 * NUMERO_DE_CRUZAMENTOS) ;
+bool teste = contadorDeFinal >= (2 + 2 * NUMERO_DE_CRUZAMENTOS);
 
   if(teste) {
     tipoDeFinal = FINAL_POR_CONTADOR;
@@ -265,42 +272,15 @@ bool devePararPorContador() {
   }
 }
 
-void para() {
-  while(true) {
-    motorEsquerdo(150);
-    motorDireito(150);
-    delay(500);
-    motorEsquerdo(150);
-    motorDireito(150);
-    delay(300);
-    motorEsquerdo(100);
-    motorDireito(100);
-    delay(200);
-    motorEsquerdo(50);
-    motorDireito(50);
-    delay(100);
-    motorEsquerdo(0);
-    motorDireito(0);
-      if(tipoDeFinal == FINAL_POR_TEMPO) {
-      digitalWrite(13, HIGH);
-      delay(200);
-      digitalWrite(13, LOW);
-      delay(200);
-      digitalWrite(13, HIGH);
-      delay(200);
-      digitalWrite(13, LOW);
-      delay(800);
+
+void para() 
+{
+    for(int x = 150 ; x !=0 ; x = x-50)
+    { 
+      motorEsquerdo(x);
+      motorDireito(x);
+      delay(250);
     }
-    else if(tipoDeFinal == FINAL_POR_CONTADOR) {
-      digitalWrite(13, HIGH);
-      delay(200);
-      digitalWrite(13, LOW);
-      delay(200);
-    }
-    else {
-      digitalWrite(13, HIGH);
-    }
-  }
 }
 //############################### FUNÇÕES DOS MOTORES ##########################################
 
@@ -362,45 +342,56 @@ void dividirString(char* data) {
     Serial.flush();
 }
 void serial_radical(char* data) {
-
-          if((((data[0] == 'P' && data[1] == 'A') && data[2]=='R') && data[3] == 'A')) {
-            para();
-            Serial.println("Parando...");
-            }
-  
-          if(data[0] == 'P' && data[1]!= 'A') {
-          kp = strtol(data+1, NULL, 10);
-          kp = constrain(kp, -500, 500);
-               if(DEBUG) {
-                 Serial.print("kp setado para: ");
-                 Serial.println(kp);
-                }
+    if((((data[0] == 'P' && data[1] == 'A') && data[2]=='R') && data[3] == 'A')) {
+    para();
+    if(DEBUG) {
+          Serial.println("Parando...");
+          parada = 1;
           }
+    }
   
-          if(data[0] == 'I') {
-           ki = strtol(data+1, NULL, 10);
-           ki = constrain(ki, -500, 500);
-            if(DEBUG){
-            Serial.print("ki setado para: ");
-            Serial.println(ki);
-            }
+    if(data[0] == 'P' && data[1]!= 'A') {
+       kp = strtol(data+1, NULL, 10);
+       kp = constrain(kp, -500, 500);
+         if(DEBUG) {
+          Serial.print("kp setado para: ");
+          Serial.println(kp);
+          parada = 0;
           }
+    }
   
-          if(data[0] == 'D') {
-           kd = strtol(data+1, NULL, 10);
-           kd = constrain(kd, -500, 500);
-            if(DEBUG) {
-            Serial.print("kd setado para: ");
-            Serial.println(kd);
-            }
+    if(data[0] == 'I') {
+       ki = strtol(data+1, NULL, 10);
+       ki = constrain(ki, -500, 500);
+         if(DEBUG){
+          Serial.print("ki setado para: ");
+          Serial.println(ki);
+          parada = 0;
           }
+     }
   
-           if(data[0] == 'V') {
-          velocidadeAtual = strtol(data+1, NULL, 10);
-          velocidadeAtual = constrain(velocidadeAtual, -500, 500);
-             if(DEBUG) {
-            Serial.print("Velocidade atual está: ");
-            Serial.println(velocidadeAtual);
-            }
+     if(data[0] == 'D') {
+       kd = strtol(data+1, NULL, 10);
+       kd = constrain(kd, -500, 500);
+          if(DEBUG) {
+           Serial.print("kd setado para: ");
+           Serial.println(kd);
+           parada = 0;
+           }
+     }
+  
+      if(data[0] == 'V') {
+        velocidadeAtual = strtol(data+1, NULL, 10);
+        velocidadeAtual = constrain(velocidadeAtual, -500, 500);
+          if(DEBUG) {
+           Serial.print("Velocidade atual está: ");
+           Serial.println(velocidadeAtual);
+           parada = 0;
           }
+     }
+     if(data[0] == 'G' && data[1] == 'O')
+     {
+      Serial.println("GO !");
+      parada = 0;
+     }
 }
