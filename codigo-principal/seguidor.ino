@@ -36,6 +36,8 @@ int limiar          = 0;
 int tipoDeFinal     =-1;
 int contadorDeFinal = 0;
 int parada          = false;
+int direito         = 0;
+int esquerdo        = 0;
 bool corDaLinha     = BRANCA;
 bool marcacaoVista  = false;
 bool flagDeVerificador[NUMERO_DE_VERIFICADORES] = {false, false};
@@ -64,7 +66,10 @@ void setup() {
   calibrarSensores(10);
   delay(1000);
 
-  while(lerSensor(verificadores[0]) == true && lerSensor(verificadores[1]) == true);
+  while(lerSensor(verificadores[0]) == true && lerSensor(verificadores[1]) == true){
+    if(DEBUG)
+      Serial.print("Esperando.");
+  }
  
   for(int c=0; c<5 ; c++){
     digitalWrite(13, HIGH);
@@ -80,16 +85,16 @@ void loop() {
   
   erro = lerPontoAtual();
   correcao = (kp * erro) + (kd * (erro - erroAnterior)/deltaTime/1000.00) + (ki * somatorioDeErro*deltaTime/1000.00);
- 
+  
   if(erro == erros[0] || erro == erros[NUMERO_DE_SENSORES-1])
     correcaoBruta();
   else
     correcaoConvencional();      
-    erroAnterior = erro;
-    somatorioDeErro += erro;
-  if (erro == 0)
-    somatorioDeErro = 0;
-    prevenirWindUp();
+  erroAnterior = erro;
+  somatorioDeErro += erro;
+  if (erro == 0) somatorioDeErro = 0;
+  prevenirWindUp();
+  
   if(parada) para();
 
   if(Serial.available() >0)
@@ -97,12 +102,10 @@ void loop() {
       int indice = 0;
       delay(100); 
       int numChar = Serial.available();
-      if(numChar> (N_CARACTERES-1)) 
-      {numChar = (N_CARACTERES-1);}
+      if(numChar> (N_CARACTERES-1)) numChar = (N_CARACTERES-1);
    
-    while(numChar--)
-      {buffer[indice++] = Serial.read();}
-      dividirString(buffer);
+    while(numChar--) buffer[indice++] = Serial.read();
+    dividirString(buffer);
     } 
 }
 
@@ -122,18 +125,24 @@ void calibrarSensores(int numeroDeIteracoes)
   {
     mediaDaMesa += (analogRead(verificadores[0]) + analogRead(verificadores[1])) / 2;
   }
-
  
  for (int i = 0; i < numeroDeIteracoes; i++)
-  {
+ {
     mediaDaLinha += analogRead(sensores[2]);
-  }
+ }
 
   mediaDaMesa /= numeroDeIteracoes;
   mediaDaLinha /= numeroDeIteracoes;
-
   //O limiar é a média das médias
   limiar = (mediaDaMesa + mediaDaLinha) / 2;
+  if(DEBUG){ 
+    Serial.print("Media da mesa : ");
+    Serial.println(mediaDaMesa);
+    Serial.print("Media da linha: ");   
+    Serial.println(mediaDaLinha);
+    Serial.print("Limite        : ");    
+    Serial.println(limiar);
+  }  
   if (mediaDaMesa > mediaDaLinha)  
   {
     corDaLinha = BRANCA;
@@ -199,28 +208,46 @@ void prevenirWindUp() {
 
 void correcaoBruta() {
   if(correcao > 0) {
-    motorEsquerdo(velocidadeAtual + correcao);
-    motorDireito (velocidadeAtual - correcao);
+    esquerdo = velocidadeAtual + correcao;
+    direito = velocidadeAtual - correcao;
   }
   else if(correcao < 0) {
-    motorEsquerdo(velocidadeAtual - correcao);
-    motorDireito (velocidadeAtual + correcao);
+    esquerdo = velocidadeAtual + correcao;
+    direito = velocidadeAtual - correcao;
   }
   else {
-    motorEsquerdo(velocidadeAtual);
-    motorDireito(velocidadeAtual);
+    esquerdo = velocidadeAtual;
+    direito = velocidadeAtual;
+  }
+  motorEsquerdo(esquerdo);
+  motorDireito(direito);
+  if(DEBUG)
+  {
+    Serial.print("Motor Esquerdo: ");
+    Serial.println(esquerdo);    
+    Serial.print("Motor Direito : ");
+    Serial.println(direito);
   }
 }
 
 void correcaoConvencional() {
-   if(correcao > 0) {
-    motorEsquerdo(velocidadeAtual + correcao);
-    motorDireito (velocidadeAtual);
+  if(correcao > 0) {
+    direito  = velocidadeAtual;
+    esquerdo = velocidadeAtual - correcao;
   }
   else if(correcao < 0) {
-    motorEsquerdo(velocidadeAtual - correcao);
-    motorDireito (velocidadeAtual);
+    direito = velocidadeAtual;    
+    esquerdo = velocidadeAtual - correcao;
   }
+  motorEsquerdo(esquerdo);
+  motorDireito(direito);
+  if(DEBUG)
+  {
+    Serial.print("Motor Esquerdo: ");
+    Serial.println(esquerdo);    
+    Serial.print("Motor Direito : ");
+    Serial.println(direito);
+  }  
 }
 
 /*#################################### FUNÇÕES DE PARADA ##########################################*/
