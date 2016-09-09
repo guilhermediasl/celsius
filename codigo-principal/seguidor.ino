@@ -3,21 +3,21 @@
 #define MOTOR_D1    3
 #define MOTOR_D2    5
 #define BTN         11
-#define VELOCIDADE_MAXIMA   255
-#define VELOCIDADE_BASE   100
-#define NUMERO_DE_SENSORES  6
+#define VELOCIDADE_MAXIMA       255
+#define VELOCIDADE_BASE         100
+#define NUMERO_DE_SENSORES      6
 #define NUMERO_DE_VERIFICADORES 2
 #define KP      15
-#define KD      4
-#define KI      4
-#define DEBUG       1
+#define KD      0
+#define KI      0
+#define DEBUG       0
 #define BRANCA      true
 #define PRETA       false
 #define TEMPO_PARA_FINAL  40000 //milissegundos
 #define ESQUERDA    0
 #define DIREITA     1
 #define TESTE_DE_MARCACAO   10
-#define FINAL_POR_TEMPO   0
+#define FINAL_POR_TEMPO     0
 #define FINAL_POR_MARCACAO  1
 #define FINAL_POR_CONTADOR  2
 #define NUMERO_DE_CRUZAMENTOS   2
@@ -25,7 +25,7 @@
 #define N_CARACTERES    30
 
 float sensores[NUMERO_DE_SENSORES]           = {A2, A3, A4, A5, A6, A7};
-float erros[NUMERO_DE_SENSORES]              = {-6,-4,-1,1,4,6};
+float erros[NUMERO_DE_SENSORES]              = {-1.55,-1.05,-0.55,0.50,1.00,1.50};
 float verificadores[NUMERO_DE_VERIFICADORES] = {A0, A1};
 float erro            = 0;
 float correcao        = 0;
