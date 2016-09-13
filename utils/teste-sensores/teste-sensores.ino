@@ -5,7 +5,7 @@
  */
 
 //Define a quantidade de sensores e tempo para legibilidade da saída serial
-#define NUMERO_DE_SENSORES 8
+#define NUMERO_DE_SENSORES 6
 #define NUMERO_DE_VERIFICADORES 2
 #define TEMPO 800
 
