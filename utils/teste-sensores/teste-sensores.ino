@@ -47,8 +47,5 @@ void loop() {
 			
 		}
 	}
-	for(int i = 0; i < NUMERO_DE_SENSORES; i++) {
-		Serial.println(analogRead(sensores[i]));
-	}
 	delay(TEMPO);	//Delay para legibilidade do código. 
 }
