@@ -3,11 +3,12 @@
 #define MOTOR_D1    3
 #define MOTOR_D2    5
 #define BTN         11
-#define VELOCIDADE_MAXIMA       255
-#define VELOCIDADE_BASE         100
+#define VELOCIDADE_MAXIMA       90
+#define VELOCIDADE_BASE         60
 #define NUMERO_DE_SENSORES      6
 #define NUMERO_DE_VERIFICADORES 2
-#define KP      15
+#define LIMIAR 80
+#define KP     30
 #define KD      0
 #define KI      0
 #define DEBUG       0
@@ -20,26 +21,26 @@
 #define FINAL_POR_TEMPO     0
 #define FINAL_POR_MARCACAO  1
 #define FINAL_POR_CONTADOR  2
-#define NUMERO_DE_CRUZAMENTOS   2
-#define LIMITE_TEMPO_ESQUERDA   500
-#define N_CARACTERES    30
+#define NUMERO_DE_CRUZAMENTOS  2
+#define LIMITE_TEMPO_ESQUERDA  500
+#define N_CARACTERES   30
 
 float sensores[NUMERO_DE_SENSORES]           = {A2, A3, A4, A5, A6, A7};
-float erros[NUMERO_DE_SENSORES]              = {-1.55,-1.05,-0.55,0.50,1.00,1.50};
+float erros[NUMERO_DE_SENSORES]              = {-15.0,-10.0,-5.0,5.0,10.0,15.0};
 float verificadores[NUMERO_DE_VERIFICADORES] = {A0, A1};
 float erro            = 0;
 float correcao        = 0;
 float erroAnterior    = 0;
 float somatorioDeErro = 0;
-int velocidadeAtual = VELOCIDADE_BASE;
-int limiar          = 0;
-int tipoDeFinal     =-1;
-int contadorDeFinal = 0;
-int parada          = false;
-int direito         = 0;
-int esquerdo        = 0;
-bool corDaLinha     = BRANCA;
-bool marcacaoVista  = false;
+int velocidadeAtual   = VELOCIDADE_BASE;
+int limiar            = 0;
+int tipoDeFinal       =-1;
+int contadorDeFinal   = 0;
+int parada            = false;
+int direito           = 0;
+int esquerdo          = 0;
+bool corDaLinha       = BRANCA;
+bool marcacaoVista    = false;
 bool flagDeVerificador[NUMERO_DE_VERIFICADORES] = {false, false};
 unsigned int ultimoProcesso = 0;
 unsigned int contadorDeVerificacaoEsquerda = 0;
@@ -54,6 +55,7 @@ void setup() {
      Serial.begin(9600);
      Serial.flush();
   }
+  Serial.println("Inicio");
   pinMode(MOTOR_E1, OUTPUT);
   pinMode(MOTOR_E2, OUTPUT);
   pinMode(MOTOR_D1, OUTPUT);
@@ -67,14 +69,14 @@ void setup() {
   delay(1000);
 
   while(lerSensor(verificadores[0]) == true && lerSensor(verificadores[1]) == true){
+    digitalWrite(13, HIGH);
     if(DEBUG)
       Serial.print("Esperando.");
   }
- 
   for(int c=0; c<5 ; c++){
-    digitalWrite(13, HIGH);
-    delay(500);
     digitalWrite(13, LOW);
+    delay(500);
+    digitalWrite(13, HIGH);
     delay(500);
   }
 }
@@ -86,17 +88,17 @@ void loop() {
   erro = lerPontoAtual();
   correcao = (kp * erro) + (kd * (erro - erroAnterior)/deltaTime/1000.00) + (ki * somatorioDeErro*deltaTime/1000.00);
   
-  if(erro == erros[0] || erro == erros[NUMERO_DE_SENSORES-1])
+//  if(erro == erros[0] || erro == erros[NUMERO_DE_SENSORES-1])
     correcaoBruta();
-  else
-    correcaoConvencional();      
+//  else
+//    correcaoConvencional();      
   erroAnterior = erro;
   somatorioDeErro += erro;
   if (erro == 0) somatorioDeErro = 0;
   prevenirWindUp();
   
   if(parada) para();
-
+/*
   if(Serial.available() >0)
   {
       int indice = 0;
@@ -107,6 +109,7 @@ void loop() {
     while(numChar--) buffer[indice++] = Serial.read();
     dividirString(buffer);
     } 
+*/
 }
 
 /*################################# FUNÇÕES DE LEITURA ########################################### */
@@ -134,7 +137,8 @@ void calibrarSensores(int numeroDeIteracoes)
   mediaDaMesa /= numeroDeIteracoes;
   mediaDaLinha /= numeroDeIteracoes;
   //O limiar é a média das médias
-  limiar = (mediaDaMesa + mediaDaLinha) / 2;
+//  limiar = (mediaDaMesa + mediaDaLinha) / 2;
+    limiar = LIMIAR; 
   if(DEBUG){ 
     Serial.print("Media da mesa : ");
     Serial.println(mediaDaMesa);
@@ -207,15 +211,21 @@ void prevenirWindUp() {
 }
 
 void correcaoBruta() {
-  if(correcao > 0) {
-    esquerdo = velocidadeAtual + correcao;
-    direito = velocidadeAtual - correcao;
+  if(erro > 0) {
+    if(DEBUG)
+      Serial.println("Erro positivo ");
+    esquerdo = velocidadeAtual - correcao;
+    direito = velocidadeAtual + correcao;
   }
-  else if(correcao < 0) {
-    esquerdo = velocidadeAtual + correcao;
-    direito = velocidadeAtual - correcao;
+  else if(erro < 0) {
+    if(DEBUG)
+      Serial.println("Erro negativo");
+    esquerdo = velocidadeAtual - correcao;
+    direito = velocidadeAtual + correcao;
   }
   else {
+    if(DEBUG)
+      Serial.println("Sem erro");  
     esquerdo = velocidadeAtual;
     direito = velocidadeAtual;
   }
@@ -227,18 +237,31 @@ void correcaoBruta() {
     Serial.println(esquerdo);    
     Serial.print("Motor Direito : ");
     Serial.println(direito);
+    Serial.print("Correcao : ");
+    Serial.println(correcao);  
   }
 }
 
 void correcaoConvencional() {
-  if(correcao > 0) {
-    direito  = velocidadeAtual;
-    esquerdo = velocidadeAtual - correcao;
+  if(erro > 0) {
+    if(DEBUG)
+      Serial.println("Erro positivo");
+    direito  = velocidadeAtual + correcao;
+    esquerdo = velocidadeAtual;
   }
-  else if(correcao < 0) {
-    direito = velocidadeAtual;    
-    esquerdo = velocidadeAtual - correcao;
-  }
+    else if(erro < 0) {
+      if(DEBUG)
+        Serial.println("Erro negativo"); 
+      direito = velocidadeAtual;    
+      esquerdo = velocidadeAtual - correcao;
+    }
+      else
+      {
+        if(DEBUG)
+          Serial.println("Sem erro");  
+        direito = velocidadeAtual;
+        esquerdo = velocidadeAtual;
+      }
   motorEsquerdo(esquerdo);
   motorDireito(direito);
   if(DEBUG)
@@ -247,6 +270,8 @@ void correcaoConvencional() {
     Serial.println(esquerdo);    
     Serial.print("Motor Direito : ");
     Serial.println(direito);
+    Serial.print("Correcao : ");
+    Serial.println(correcao);
   }  
 }
 
@@ -267,13 +292,11 @@ void correcaoConvencional() {
       marcacaoVista = false;
       contadorDeVerificacaoEsquerda = 0;
     }
-
     teste = (contadorDeVerificacaoEsquerda > LIMITE_TEMPO_ESQUERDA) && viuMarcacao;
   }
   else {
     teste = false;
   }
-
   if(teste) {
     tipoDeFinal = FINAL_POR_MARCACAO;
     return true;
@@ -418,7 +441,8 @@ void serial_radical(char* data) {
      }
      if(data[0] == 'G' && data[1] == 'O')
      {
-      Serial.println("GO !");
+      if(DEBUG)
+        Serial.println("GO !");
       parada = 0;
      }
 }
