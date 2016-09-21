@@ -1,6 +1,8 @@
 /* Teste Sensores
  * Código para leitura de sensores ópticos e análise via console serial
  * Autores: Gabriel Alves de Lima
+ *	    Kelly Bezerra da Mota
+ *	    Kewin Lima da Silva
  * última alteração: 02/12/2015 - Adição de comentários
  */
 
