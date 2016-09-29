@@ -7,9 +7,9 @@
 #define VELOCIDADE_BASE         60
 #define NUMERO_DE_SENSORES      6
 #define NUMERO_DE_VERIFICADORES 2
-#define LIMIAR 80
-#define KP     30
-#define KD      0
+#define LIMIAR  80
+#define KP      12
+#define KD      400
 #define KI      0
 #define DEBUG       0
 #define BRANCA      true
@@ -49,6 +49,7 @@ char buffer[N_CARACTERES+2];
 float kp = KP;
 float kd = KD;
 float ki = KI;
+float t0;
 
 void setup() {
   if(DEBUG){
@@ -65,7 +66,7 @@ void setup() {
     pinMode(sensores[i], INPUT);
   for(int i = 0; i < NUMERO_DE_VERIFICADORES; i++)
     pinMode(verificadores[i], INPUT);
-  calibrarSensores(10);
+  calibrarSensores(10);                          //Limiar é definido
   delay(1000);
 
   while(lerSensor(verificadores[0]) == true && lerSensor(verificadores[1]) == true){
@@ -79,12 +80,14 @@ void setup() {
     digitalWrite(13, HIGH);
     delay(500);
   }
+  t0 = millis();
 }
 
 void loop() {
+  //Diminuir o erro usando o tempo;
+    float deltatempo = t0 - millis();
     float deltaTime = (millis() - ultimoProcesso);
     ultimoProcesso = millis();
-  
   erro = lerPontoAtual();
   correcao = (kp * erro) + (kd * (erro - erroAnterior)/deltaTime/1000.00) + (ki * somatorioDeErro*deltaTime/1000.00);
   
@@ -97,8 +100,14 @@ void loop() {
   if (erro == 0) somatorioDeErro = 0;
   prevenirWindUp();
   
+  if(deltatempo > TEMPO_PARA_FINAL){
+    while(1){
+      para();
+    }
+  }
+  
   if(parada) para();
-/*
+
   if(Serial.available() >0)
   {
       int indice = 0;
@@ -109,7 +118,7 @@ void loop() {
     while(numChar--) buffer[indice++] = Serial.read();
     dividirString(buffer);
     } 
-*/
+
 }
 
 /*################################# FUNÇÕES DE LEITURA ########################################### */
@@ -137,8 +146,8 @@ void calibrarSensores(int numeroDeIteracoes)
   mediaDaMesa /= numeroDeIteracoes;
   mediaDaLinha /= numeroDeIteracoes;
   //O limiar é a média das médias
-//  limiar = (mediaDaMesa + mediaDaLinha) / 2;
-    limiar = LIMIAR; 
+    limiar = (mediaDaMesa + mediaDaLinha) / 2;
+ // limiar = LIMIAR; 
   if(DEBUG){ 
     Serial.print("Media da mesa : ");
     Serial.println(mediaDaMesa);
@@ -156,6 +165,7 @@ void calibrarSensores(int numeroDeIteracoes)
     corDaLinha = PRETA;
   }
 }
+
 bool lerSensor(int porta) {
   int leitura = analogRead(porta);
 
