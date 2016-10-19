@@ -14,9 +14,10 @@
 #define BTN         13
 #define VELOCIDADE_MAXIMA        60
 #define VELOCIDADE_BASE          50
+#define VELOCIDADE_RODAR         40
 #define NUMERO_DE_SENSORES        6
 #define NUMERO_DE_VERIFICADORES   2
-#define LIMIAR 500
+#define LIMIAR 80
 #define KPR     12    //kp para reta
 #define KDR     300   //kd para reta
 #define KIR     0     //ki para reta
@@ -25,7 +26,7 @@
 #define KIC     0     // ki para curva
 #define RETA        1
 #define CURVA      -1
-#define DEBUG       0
+#define DEBUG       1
 #define BRANCA      true
 #define PRETA       false
 #define BRANCO      0
@@ -112,6 +113,7 @@ void setup() {
 
 
 void loop() { 
+    while(1) rodar();
     deltaTime = (millis() - ultimoProcesso);
     ultimoProcesso = millis();
 
@@ -563,3 +565,13 @@ void serial_radical(char* data) {
 }
 */
 
+void rodar() {
+  delay(1000);
+  while(lerSensorBruto(verificadores[0] > LIMIAR))
+  {
+    Serial.println("Preto");
+    motorDireito(VELOCIDADE_RODAR);
+    motorEsquerdo(-VELOCIDADE_RODAR);  
+  }
+  Serial.println("branco");
+}
